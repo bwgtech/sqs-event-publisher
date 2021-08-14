@@ -107,7 +107,6 @@ dist
 .terraform*
 *.tfstate*
 
-
-
+# All Others (especially those added by TortoiseGit!)
 *.lock
 *.zip
