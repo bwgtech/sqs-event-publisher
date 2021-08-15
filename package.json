@@ -1,4 +1,7 @@
 {
+  "name": "sqs-event-publisher",
+  "version": "0.1.0",
+  "description": "Cloud application to accept json requests and route them to message queues based on various criteria.",
   "devDependencies": {
     "aws-sdk-client-mock": "^0.5.3",
     "jest": "^27.0.6"

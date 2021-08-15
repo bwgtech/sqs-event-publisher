@@ -1,10 +1,21 @@
 /**
  *  aws.tf
  *
- *    This configuration sets up AWS cloud infrastructure for an Event Publisher application.
- *  
- *    It utilizes a nodejs Lambda function with API Gateway trigger to accept HTTP requests 
- *    containing a json message body and route it to SQS queues based on source and type.
+ *    This configuration performs the following AWS operations:
+ *      1. Retrieve Account Id for the caller
+ *      2. Configure IAM Role for Lambda
+ *      2. Configure CloudWatch Log Access Policy & assign to the Lambda Role
+ *      3. Configure SQS Access Policy & assign to the Lambda Role
+ *      5. Configure Zip Archive of source (JavaScript)
+ *      6. Configure Lambda Function
+ *      7. Configure API Gateway
+ *      8. Configure API Gateway Logging
+ *      9. Configure a Stage for API Gateway
+ *      8. Link and Permission API Gateway as Lambda Function Trigger
+ *      9. Export endpoint url to be used for other Infra operations
+ *
+ *    NOTE: AWS credentials should already be configured at this point, 
+ *          see ../main.tf for further instructions.
  *
  */
 
@@ -171,6 +182,7 @@ resource "aws_apigatewayv2_stage" "dev" {
     )
   }
   
+// Potential workaround to Terraform bug detecting state changes
 //  lifecycle {
 //    ignore_changes = [
 //      deployment_id,

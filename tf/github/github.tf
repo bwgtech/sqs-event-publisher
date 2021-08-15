@@ -1,3 +1,8 @@
+/**
+ *  github.tf
+ *
+ */
+
 terraform {
   required_providers {
     github = {
@@ -5,10 +10,6 @@ terraform {
       version = "~> 4.0"
     }
   }
-}
-
-variable "url" {
-  type = string
 }
 
 /**
@@ -20,6 +21,10 @@ variable "url" {
 locals {
   GitHubOwner = "bwgtech"
   RepoName    = "sqs-event-publisher"
+}
+
+variable "url" {
+  type = string
 }
 
 provider "github" {
