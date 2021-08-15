@@ -23,6 +23,11 @@ test('index.buildQueueName(): Proper Queue Name', () => {
 	expect(index.buildQueueName(e)).toBe('MyApp-prod-azurerepos-pullRequest');
 });
 
+test('index.buildQueueName(): Event With Null Body & Headers', () => {
+	let e = new Event(null, null, '/prod/MyApp');
+	expect(index.buildQueueName(e)).toBe('MyApp-prod-UnknownSource-UnknownType');
+});
+
 // Tests for getSource(event) from index.js
 
 test('index.getSource(): Null Event', () => {

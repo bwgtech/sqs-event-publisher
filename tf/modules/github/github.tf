@@ -19,32 +19,22 @@ terraform {
   }
 }
 
-/**
- *  Configurable Values
- *
- *    Please see the following for details on GitHub authentication options: 
- *      https://registry.terraform.io/providers/integrations/github/latest/docs
- */
-locals {
-  GitHubOwner = "bwgtech"
-  RepoName    = "sqs-event-publisher"
+variable "repoName" {
+  type = string
+  default = "sqs-event-publisher"
 }
 
-variable "url" {
+variable "endpointUrl" {
   type = string
 }
 
-provider "github" {
-  owner = local.GitHubOwner
-}
-
 resource "github_repository_webhook" "sqs-event-publisher" {
-  repository = local.RepoName
-  active     = false
+  repository = var.repoName
+  active     = true
   events     = ["pull_request", "push"]
 
   configuration {
-    url          = var.url
+    url          = var.endpointUrl
     content_type = "json"
     insecure_ssl = false
   }

@@ -11,14 +11,15 @@ var sqs = new AWS.SQS({region : 'us-east-1'});
 
 exports.handler = async (event) => {
     console.log('Received event: ' + event);
+	
 	// Some initial default values in case things go awry
 	let responseCode = 500;
 	let responseTxt = 'Unknown Error Processing Request';
 	
 	let queueName = buildQueueName(event);
     
-    let queueUrl = null;
 	// Check if a queue with the desired name already exists
+	let queueUrl = null;
     try {
         let existingQ = await getQueueUrl({QueueName: queueName});
 		queueUrl = existingQ.QueueUrl;
@@ -81,11 +82,11 @@ module.exports.QueueNameVars = QueueNameVars;
 
 /**
  * Constructs a queue name string in the format:
- *    <Application Name> - <Environment> - <Source> - <Message/Operation Type>
+ *   <Application Name> - <Environment> - <Source> - <Message/Operation Type>
  *
- * @param {object} event The Lambda event object
- * @return {string} The constructed queue name (@see QueueNameVars for values 
- *   that this can contain if certain tokens were undeterminable.
+ *   @param {object} event The Lambda event object
+ *   @return {string} The constructed queue name (@see QueueNameVars for values 
+ *     that this can contain if certain tokens were undeterminable.
  */
 function buildQueueName(event) {
   let appName = QueueNameVars.UNKNOWN_APP;
@@ -102,10 +103,11 @@ function buildQueueName(event) {
 module.exports.buildQueueName = buildQueueName;
 
 /**
- * Determines the source of the event based on HTTP headers and/or message contents.
+ * Determines the source of the event based on HTTP headers and/or message 
+ * contents.
  *
- * @param {Event} event The Lambda event object
- * @return {string} The source string (or "UnknownSource" if no source could be determined.
+ *   @param {Event} event The Lambda event object
+ *   @return {string} The source string (or "UnknownSource" if no source could be determined.
  */
 function getSource(event) {
   try {
@@ -150,7 +152,7 @@ function getType(event) {
 };
 module.exports.getType = getType;
 
-// Below is mocked for testing and can be swapped for other clouds
+// Below is mocked for testing and can be swapped out for other cloud providers
 
 const createQueue = async params => {
     return await sqs.createQueue(params).promise();

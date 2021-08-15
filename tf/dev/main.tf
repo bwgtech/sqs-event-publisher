@@ -1,7 +1,7 @@
 /**
  *  main.tf
  *
- *    Main Terraform Configuration
+ *    Environment: dev
  *
  *    The following must be set in your environment in order to apply infrastructure operations:
  *
@@ -33,12 +33,13 @@
  */
 
 module "aws" {
-  source = "./aws"
+  source = "../modules/aws"
 }
 
+/*
 module "github" {
-  source      = "./github"
+  source      = "../modules/github"
   endpointUrl = module.aws.url
 }
-
+*/
  

@@ -43,13 +43,19 @@ locals {
   AwsAccountId  = data.aws_caller_identity.current.account_id
   AwsProfile    = "dev"
   AwsRegion     = "us-east-1"
-  JsCodeDir     = "${path.module}/../../app"
+  JsCodeDir     = "${path.module}/../../js"
   LambdaPkgName = "lambda_pkg.zip"
 }
 
 provider "aws" {
   profile = local.AwsProfile
   region  = local.AwsRegion
+  default_tags {
+	tags = {
+	  AppName = local.AppName
+	  ManagedBy = "Terraform"
+	}
+  }
 }
 
 /**
