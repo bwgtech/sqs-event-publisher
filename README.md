@@ -1,13 +1,14 @@
 # sqs-event-publisher
 
-Currently this project utilizes a Node.js AWS Lambda function with API Gateway 
-trigger to accept HTTP requests containing any json message.  The function 
-inspects the headers and payload contents in order to route the messages to the 
-desired AWS SQS queues.
+Currently this project utilizes a Node.js AWS Lambda function with API Gateway trigger to accept 
+HTTP requests containing any json message.  The function inspects the headers and payload contents 
+in order to route the messages to the desired AWS SQS queues.
 
-Terraform is used to provision and maintain all necessary cloud infrastructure.  
-AWS was chosen initially based on the requirements, but the package structure 
-is intended to facilitate the addition or substitution of cloud providers.
+Terraform is used to provision and maintain all necessary cloud infrastructure.  AWS was chosen 
+initially based on the requirements, but the package structure is intended to facilitate the 
+addition or substitution of cloud providers.  Details on the expected infrastructure operations 
+are commented directly in the Terraform config [main.tf](./tf/main.tf), [aws.tf](./tf/aws/aws.tf),
+ and [github.tf](./tf/github/github.tf).
 
 ## Contents
 
@@ -22,8 +23,7 @@ is intended to facilitate the addition or substitution of cloud providers.
 ```sh
 $ aws configure --profile dev
 ```
-
-*see [Amazon CLI Docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) 
+    *Please refer to [AWS CLI Docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) 
 for further details*
   
   2. Deploy Application (including Infrastructure & Code)
