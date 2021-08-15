@@ -6,11 +6,12 @@
  *    Routes incoming json to SQS based on headers and message elements.
  *
  */
-var AWS = require('aws-sdk');
-var sqs = new AWS.SQS({region : 'us-east-1'});
+
+const AWS = require('aws-sdk');
+const SQS = new AWS.SQS({region : process.env.AWS_REGION});
 
 exports.handler = async (event) => {
-    console.log('Received event: ' + event);
+    console.log(event);
 	
 	// Some initial default values in case things go awry
 	let responseCode = 500;
@@ -65,8 +66,8 @@ exports.handler = async (event) => {
     console.log(responseTxt);
     
     const response = {
-        statusCode: returnCode,
-        body: response
+        statusCode: responseCode,
+        body: responseTxt
     };
     return response;
 };
@@ -82,7 +83,8 @@ module.exports.QueueNameVars = QueueNameVars;
 
 /**
  * Constructs a queue name string in the format:
- *   <Application Name> - <Environment> - <Source> - <Message/Operation Type>
+ *
+ * <Application Name> - <Environment> - <Source> - <Message/Operation Type>
  *
  *   @param {object} event The Lambda event object
  *   @return {string} The constructed queue name (@see QueueNameVars for values 
@@ -92,26 +94,29 @@ function buildQueueName(event) {
   let appName = QueueNameVars.UNKNOWN_APP;
   let env = QueueNameVars.UNKNOWN_ENV;
   try {
-	  let path = event.rawPath;
-	  let lastSlash = path.lastIndexOf('/');
-	  appName = path.substring(lastSlash + 1, path.length);
-	  env = path.substring(1, lastSlash);
+	  if (typeof process.env.APP_NAME != 'undefined') {
+		  appName = process.env.APP_NAME;
+	  }
+	  if (typeof process.env.ENV != 'undefined') {
+		  env = process.env.ENV
+	  }
   } catch (error) { }
-  
   return appName + '-' + env + '-' + getSource(event) + '-' + getType(event);
-};
+}
 module.exports.buildQueueName = buildQueueName;
 
 /**
- * Determines the source of the event based on HTTP headers and/or message 
- * contents.
+ * Determines the source of the event by first checking if the field named 'source' is present 
+ * in the message body (which is expected to be JSON).  If not found, HTTP headers are inspected 
+ * for known sources.
  *
- *   @param {Event} event The Lambda event object
- *   @return {string} The source string (or "UnknownSource" if no source could be determined.
+ *   @param {object} event The Lambda event object
+ *   @return {string} The source string (or "UnknownSource" if no source could be determined).
  */
 function getSource(event) {
   try {
-	  let source = event.body.source;
+	  let json = JSON.parse(event.body);
+	  let source = json.source;
 	  if (source != null) {
 		  return source;
 	  }
@@ -124,18 +129,21 @@ function getSource(event) {
   } catch (error) { }
 
   return QueueNameVars.UNKNOWN_SOURCE;
-};
+}
 module.exports.getSource = getSource;
 
 /**
- * Determines the type of the event/operation based on HTTP headers and/or message contents.
+ * Determines the source of the event by first checking if the field named 'source' is present 
+ * in the message body (which is expected to be JSON).  If not found, HTTP headers are inspected 
+ * for known sources.
  *
- * @param {Event} event The Lambda event object
- * @return {string} The type string (or "UnknownType" if no type could be determined.
+ *   @param {object} event The Lambda event object
+ *   @return {string} The type string (or "UnknownType" if no type could be determined).
  */
 function getType(event) {
 	try {
-		let type = event.body.type;
+		let json = JSON.parse(event.body);
+		let type = json.type;
 		if (type != null) {
 			return type;
 		}
@@ -149,19 +157,19 @@ function getType(event) {
 	} catch (error) { }
 	
 	return QueueNameVars.UNKNOWN_TYPE;
-};
+}
 module.exports.getType = getType;
 
 // Below is mocked for testing and can be swapped out for other cloud providers
 
 const createQueue = async params => {
-    return await sqs.createQueue(params).promise();
+    return await SQS.createQueue(params).promise();
 };
 
 const getQueueUrl = async params => {
-    return await sqs.getQueueUrl(params).promise();
+    return await SQS.getQueueUrl(params).promise();
 };
 
 const sendMessage = async params => {
-	return await sqs.sendMessage(params).promise();
+	return await SQS.sendMessage(params).promise();
 };

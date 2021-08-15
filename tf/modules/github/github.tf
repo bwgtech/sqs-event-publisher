@@ -1,5 +1,7 @@
 /**
- *  github.tf
+ *  tf/modules/github/github.tf
+ *
+ *    Terraform Main for Module: github
  *
  *    This configuration performs the following GitHub operations:
  *      1. Add webhook to repository specified below, which calls the 
@@ -19,9 +21,12 @@ terraform {
   }
 }
 
-variable "repoName" {
+variable "app_name" {
   type = string
-  default = "sqs-event-publisher"
+}
+
+variable "env" {
+  type = string
 }
 
 variable "endpointUrl" {

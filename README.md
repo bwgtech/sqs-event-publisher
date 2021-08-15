@@ -24,9 +24,9 @@ the expected infrastructure operations are commented directly in the Terraform f
 $ aws configure --profile dev
 ```
 
-  2. Deploy Application (including Infrastructure & Code)
+  2. Deploy Application (*including Infrastructure & Code*)
 ```sh
-$ cd tf
+$ cd tf/dev
 $ terraform init
 $ terraform plan
 $ terraform apply

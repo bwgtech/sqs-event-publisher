@@ -1,7 +1,7 @@
 /**
  *  main.tf
  *
- *    Environment: dev
+ *    Main Terraform Config for Environment: dev
  *
  *    The following must be set in your environment in order to apply infrastructure operations:
  *
@@ -23,22 +23,23 @@
  *
  *       https://registry.terraform.io/providers/integrations/github/latest/docs#authentication
  *
- *    NOTE: .tfstate is git ignored in this repo to enforce that it is not committed to VC, 
+ *    NOTE: .tfstate is git-ignored in this repo to enforce that it is not committed to VC, 
  *          but it is strongly recommended to store it in a centralized location that is 
  *          redundantly backed up.
- *
- *          Refer to the tf files in the folders below the current directory (e.g. aws/aws.tf 
- *          and github/github.tf) for a detailed explanation of each module's functionality.
  *
  */
 
 module "aws" {
-  source = "../modules/aws"
+  source   = "../modules/aws"
+  app_name = var.app_name
+  env      = var.env
 }
 
 /*
 module "github" {
   source      = "../modules/github"
+  app_name = var.app_name
+  env = var.env
   endpointUrl = module.aws.url
 }
 */

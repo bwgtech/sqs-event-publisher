@@ -1,5 +1,7 @@
 /**
- *  aws.tf
+ *  tf/modules/aws/aws.tf
+ *
+ *    Terraform Main for AWS Module
  *
  *    This configuration performs the following AWS operations:
  *      1. Retrieve Account Id for the caller
@@ -25,7 +27,7 @@ terraform {
       source  = "hashicorp/archive"
       version = "~> 2.2.0"
     }
-	aws = {
+    aws = {
       source  = "hashicorp/aws"
       version = "3.53.0"
     }
@@ -34,27 +36,28 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
-/**
- *  Configurable Values
- */
-
 locals {
-  AppName       = "SQSEventPublisher"
   AwsAccountId  = data.aws_caller_identity.current.account_id
-  AwsProfile    = "dev"
-  AwsRegion     = "us-east-1"
-  JsCodeDir     = "${path.module}/../../js"
+  JsCodeDir     = "${path.module}/../../../js"
   LambdaPkgName = "lambda_pkg.zip"
 }
 
+variable "app_name" {
+  type = string
+}
+
+variable "env" {
+  type = string
+}
+
 provider "aws" {
-  profile = local.AwsProfile
-  region  = local.AwsRegion
+  profile = var.env
+  region  = var.region
   default_tags {
-	tags = {
-	  AppName = local.AppName
-	  ManagedBy = "Terraform"
-	}
+    tags = {
+      AppName   = var.app_name
+      ManagedBy = "Terraform"
+    }
   }
 }
 
@@ -63,7 +66,7 @@ provider "aws" {
  */
 
 resource "aws_iam_role" "lambda_iam_role" {
-  name               = "${local.AppName}-IAMRole"
+  name               = "${var.app_name}-IAMRole"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -82,7 +85,7 @@ EOF
 }
 
 resource "aws_iam_policy" "lambda_iam_log_policy" {
-  name = "${local.AppName}-LogAccessPolicy"
+  name = "${var.app_name}-LogAccessPolicy"
   path = "/"
 
   policy = <<EOF
@@ -109,7 +112,7 @@ resource "aws_iam_role_policy_attachment" "lambda_log_access" {
 }
 
 resource "aws_iam_policy" "lambda_iam_sqs_policy" {
-  name = "${local.AppName}-SQSAccessPolicy"
+  name = "${var.app_name}-SQSAccessPolicy"
   path = "/"
 
   policy = <<EOF
@@ -136,19 +139,27 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
 }
 
 data "archive_file" "sqs-event-publisher" {
-  type        = "zip"
+  type = "zip"
   //source_dir  = local.JsCodeDir
   source_file = "${local.JsCodeDir}/index.js"
   output_path = "./${local.LambdaPkgName}"
 }
 
 resource "aws_lambda_function" "sqs-event-publisher" {
-  function_name    = local.AppName
+  function_name    = var.app_name
   role             = aws_iam_role.lambda_iam_role.arn
   runtime          = "nodejs14.x"
-  handler          = "index.js"
+  handler          = "index.handler"
+  
   filename         = local.LambdaPkgName
   source_code_hash = data.archive_file.sqs-event-publisher.output_base64sha256
+  
+  environment {
+    variables = {
+	  APP_NAME = var.app_name
+	  ENV      = var.env
+	}
+  }
 }
 
 /**
@@ -156,7 +167,7 @@ resource "aws_lambda_function" "sqs-event-publisher" {
  */
 
 resource "aws_apigatewayv2_api" "sqs-event-publisher" {
-  name          = "${local.AppName}-APIGateway"
+  name          = "${var.app_name}-APIGateway"
   protocol_type = "HTTP"
 }
 
@@ -187,14 +198,14 @@ resource "aws_apigatewayv2_stage" "dev" {
       }
     )
   }
-  
-// Potential workaround to Terraform bug detecting state changes
-//  lifecycle {
-//    ignore_changes = [
-//      deployment_id,
-//      default_route_settings
-//    ]
-//  }
+
+  // Potential workaround to Terraform bug detecting state changes
+  //  lifecycle {
+  //    ignore_changes = [
+  //      deployment_id,
+  //      default_route_settings
+  //    ]
+  //  }
 }
 
 resource "aws_apigatewayv2_integration" "sqs-event-publisher" {
@@ -206,16 +217,16 @@ resource "aws_apigatewayv2_integration" "sqs-event-publisher" {
 }
 
 resource "aws_apigatewayv2_route" "sqs-event-publisher" {
-  api_id    = aws_apigatewayv2_api.sqs-event-publisher.id
-  
+  api_id = aws_apigatewayv2_api.sqs-event-publisher.id
+
   route_key = "POST /${aws_lambda_function.sqs-event-publisher.function_name}"
   target    = "integrations/${aws_apigatewayv2_integration.sqs-event-publisher.id}"
 }
 
 resource "aws_lambda_permission" "sqs-event-publisher" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  
+  statement_id = "AllowExecutionFromAPIGateway"
+  action       = "lambda:InvokeFunction"
+
   function_name = aws_lambda_function.sqs-event-publisher.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.sqs-event-publisher.execution_arn}/*/*"
@@ -224,7 +235,7 @@ resource "aws_lambda_permission" "sqs-event-publisher" {
 /**
  *  Outputs
  */
- 
+
 output "url" {
   value = aws_apigatewayv2_stage.dev.invoke_url
 }
