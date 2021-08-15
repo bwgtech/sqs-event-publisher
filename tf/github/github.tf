@@ -1,6 +1,13 @@
 /**
  *  github.tf
  *
+ *    This configuration performs the following GitHub operations:
+ *      1. Add webhook to repository specified below, which calls the 
+ *           endpoint URL that is input into this module
+ *
+ *    NOTE: GitHub credentials should already be configured at this point, 
+ *          see ../main.tf for further instructions.
+ *
  */
 
 terraform {

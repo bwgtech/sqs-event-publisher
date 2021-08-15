@@ -1,63 +1,73 @@
 const index = require('../index');
 
 
-// Tests for buildQueueName(rawPath, source, type) from index.js
+// Tests for buildQueueName(event) from index.js
 
-const theAllUnknownQueue = "UnknownApp-UnknownEnv-UnknownSource-UnknownType";
+const theAllUnknownQueue = index.QueueNameVars.UNKNOWN_APP + '-' +
+                           index.QueueNameVars.UNKNOWN_ENV + '-' +
+						   index.QueueNameVars.UNKNOWN_SOURCE + '-' +
+						   index.QueueNameVars.UNKNOWN_TYPE;
 
-test('index.buildQueueName(): Null Event and Params', () => {
+test('index.buildQueueName(): Null Event', () => {
 	expect(index.buildQueueName(null, null, null)).toBe(theAllUnknownQueue);
 });
 
-test('index.buildQueueName(): Empty Event with Null Params', () => {
-	expect(index.buildQueueName(new Event(null, null), null, null)).toBe(theAllUnknownQueue);
+test('index.buildQueueName(): Empty Event', () => {
+	let e = new Event(null, null, null);
+	expect(index.buildQueueName(e)).toBe(theAllUnknownQueue);
 });
 
+test('index.buildQueueName(): Proper Queue Name', () => {
+	let body = new Body('azurerepos', 'pullRequest');
+	let e = new Event(body, null, '/prod/MyApp');
+	expect(index.buildQueueName(e)).toBe('MyApp-prod-azurerepos-pullRequest');
+});
 
 // Tests for getSource(event) from index.js
 
 test('index.getSource(): Null Event', () => {
-	expect(index.getSource(null)).toBe("UnknownSource");
+	expect(index.getSource(null)).toBe(index.QueueNameVars.UNKNOWN_SOURCE);
 });
 
 test('index.getSource(): Empty Event', () => {
-	expect(index.getSource(new Event(null, null))).toBe("UnknownSource");
+	let e = new Event(null, null, null);
+	expect(index.getSource(e)).toBe(index.QueueNameVars.UNKNOWN_SOURCE);
 });
 
 test('index.getSource(): Message Body Contains Source Field', () => {
 	let body = new Body("vcs-system", null);
-	let event = new Event(body, null);
-	expect(index.getSource(event)).toBe('vcs-system');
+	let e = new Event(body, null, null);
+	expect(index.getSource(e)).toBe('vcs-system');
 });
 
 test('index.getSource(): GitHub HTTP Header', () => {
 	let headers = ['x-github-event'];
-	let event = new Event(null, headers);
-	expect(index.getSource(event)).toBe('github');
+	let e = new Event(null, headers, null);
+	expect(index.getSource(e)).toBe('github');
 });
 
 test('index.getSource(): Unknown Header', () => {
 	let headers = ['x-vcs-event'];
-	let event = new Event(null, headers);
-	expect(index.getSource(event)).toBe('UnknownSource');
+	let e = new Event(null, headers, null);
+	expect(index.getSource(e)).toBe(index.QueueNameVars.UNKNOWN_SOURCE);
 });
 
 
 // Tests for getType(event) from index.js
 
 test('index.getType(): Null Event', () => {
-	expect(index.getType(null)).toBe("UnknownType");
+	expect(index.getType(null)).toBe(index.QueueNameVars.UNKNOWN_TYPE);
 });
 
 test('index.getType(): Empty Event', () => {
-	let event = new Event(null, null);
-	expect(index.getType(event)).toBe("UnknownType");
+	let e = new Event(null, null, null);
+	expect(index.getType(e)).toBe(index.QueueNameVars.UNKNOWN_TYPE);
 });
 
-test('index.getType(): Message Body Contains Source Field', () => {
+test('index.getType(): Message Body Contains Type Field', () => {
 	let body = new Body(null, "push");
-	let event = new Event(body, null);
-	expect(index.getType(event)).toBe('push');
+	let e = new Event(body, null, null);
+	expect(index.getType(e)).toBe('push');
 });
 
 
@@ -65,16 +75,14 @@ test('index.getType(): Message Body Contains Source Field', () => {
 // Dummy test structs
 
 class Event {
-	constructor(body, headers) {
+	constructor(body, headers, rawPath) {
 		this.body = body;
 		this.headers = headers;
+		this.rawPath = rawPath;
 	}
-	getBody() {
-		return this.body;
-	}
-	getHeaders() {
-		return this.headers;
-	}
+	getBody() { return this.body; }
+	getHeaders() { return this.headers; }
+	getRawPath() { return this.rawPath; }
 }
 
 class Body {
@@ -82,10 +90,6 @@ class Body {
 		this.source = source;
 		this.type = type;
 	}
-	getSource() {
-		return this.source;
-	}
-	getType() {
-		return this.type;
-	}
+	getSource() { return this.source; }
+	getType() { return this.type; }
 }

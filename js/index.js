@@ -1,5 +1,9 @@
-/*
+/**
  *  index.js
+ *
+ *  Lambda handler
+ *
+ *    Routes incoming json to SQS based on headers and message elements.
  *
  */
 var AWS = require('aws-sdk');
@@ -7,45 +11,51 @@ var sqs = new AWS.SQS({region : 'us-east-1'});
 
 exports.handler = async (event) => {
     console.log('Received event: ' + event);
+	// Some initial default values in case things go awry
 	let responseCode = 500;
 	let responseTxt = 'Unknown Error Processing Request';
 	
 	let queueName = buildQueueName(event);
     
     let queueUrl = null;
+	// Check if a queue with the desired name already exists
     try {
-        let obj = await getQueueUrl({QueueName: queueName});
+        let existingQ = await getQueueUrl({QueueName: queueName});
+		queueUrl = existingQ.QueueUrl;
         console.log('Queue named [' + queueName + '] already exists ' +
-		      'with URL [' + obj.queueUrl + ']');
+		      'with URL [' + queueUrl + ']');
     } catch (error) {
         console.log('Error from getQueueUrl (expected if queue does ' +
 		      'not exist): ' + error);
     }
-          
+    
+	// If queue does not already exist, create it
     if (queueUrl == null) {
         try {
-            let queue = await createQueue({QueueName: queueName});
-            console.log('Created queue with URL: ' + queue.QueueUrl);
+            let newQ = await createQueue({QueueName: queueName});
+			queueUrl = newQ.QueueUrl;
+            console.log('Created queue with URL: ' + queueUrl);
         } catch (error) {
             console.log('Error from createQueue: ' + error);
         }
     }
     
-    if (queueUrl == null) {
-        //TODO
-    }
-
-    var sendParams = {
-        DelaySeconds: 0,
-        MessageBody: event.body,
-        QueueUrl: queueUrl
-    };
-    
+	// If we have a valid queue and message body, attempt to send it to queue
     try {
-        let msg = await sendMessage(sendParams);
-        responseTxt = 'Sent message with ID [' + msg.MessageId + '] to queue [' + 
-		      queueName + ']';
-		responseCode = 200;
+		let body = event.body;
+		if (queueUrl.length > 0 && body.length > 0) {
+			let sendParams = {
+			      DelaySeconds: 0,
+			      MessageBody: body,
+			      QueueUrl: queueUrl
+			};
+			let msg = await sendMessage(sendParams);
+			responseTxt = 'Sent message with ID [' + msg.MessageId + 
+			      '] to queue [' + queueName + ']';
+			responseCode = 200;
+		} else {
+			
+		}
     } catch (error) {
         console.log(error);
         responseTxt = 'Error sending message to queue: ' + error;
@@ -58,22 +68,45 @@ exports.handler = async (event) => {
         body: response
     };
     return response;
-    
 };
 
+/** @class QueueNameVars containing constant strings for use in queue names. */
+class QueueNameVars {
+	static UNKNOWN_APP = 'UnknownApp';
+	static UNKNOWN_ENV = 'UnknownEnv';
+	static UNKNOWN_SOURCE = 'UnknownSource';
+	static UNKNOWN_TYPE = 'UnknownType';
+}
+module.exports.QueueNameVars = QueueNameVars;
+
+/**
+ * Constructs a queue name string in the format:
+ *    <Application Name> - <Environment> - <Source> - <Message/Operation Type>
+ *
+ * @param {object} event The Lambda event object
+ * @return {string} The constructed queue name (@see QueueNameVars for values 
+ *   that this can contain if certain tokens were undeterminable.
+ */
 function buildQueueName(event) {
-  let appName = "UnknownApp";
-  let env = "UnknownEnv";
+  let appName = QueueNameVars.UNKNOWN_APP;
+  let env = QueueNameVars.UNKNOWN_ENV;
   try {
-	  let lastSlash = rawPath.lastIndexOf('/');
-	  appName = rawPath.substring(lastSlash, rawPath.length-1);
-	  env = rawPath.substring(1, lastSlash-1);
+	  let path = event.rawPath;
+	  let lastSlash = path.lastIndexOf('/');
+	  appName = path.substring(lastSlash + 1, path.length);
+	  env = path.substring(1, lastSlash);
   } catch (error) { }
   
-  return appName + '-' + env + '-' + getSource(event) + '-' + getType(event); 
+  return appName + '-' + env + '-' + getSource(event) + '-' + getType(event);
 };
 module.exports.buildQueueName = buildQueueName;
 
+/**
+ * Determines the source of the event based on HTTP headers and/or message contents.
+ *
+ * @param {Event} event The Lambda event object
+ * @return {string} The source string (or "UnknownSource" if no source could be determined.
+ */
 function getSource(event) {
   try {
 	  let source = event.body.source;
@@ -92,6 +125,12 @@ function getSource(event) {
 };
 module.exports.getSource = getSource;
 
+/**
+ * Determines the type of the event/operation based on HTTP headers and/or message contents.
+ *
+ * @param {Event} event The Lambda event object
+ * @return {string} The type string (or "UnknownType" if no type could be determined.
+ */
 function getType(event) {
 	try {
 		let type = event.body.type;
@@ -107,9 +146,11 @@ function getType(event) {
 		}
 	} catch (error) { }
 	
-	return "UnknownType";
+	return QueueNameVars.UNKNOWN_TYPE;
 };
 module.exports.getType = getType;
+
+// Below is mocked for testing and can be swapped for other clouds
 
 const createQueue = async params => {
     return await sqs.createQueue(params).promise();
@@ -122,8 +163,3 @@ const getQueueUrl = async params => {
 const sendMessage = async params => {
 	return await sqs.sendMessage(params).promise();
 };
-
-class QueueNameVars {
-	static UNKNOWN_SOURCE = 'UnknownSource';
-	static UNKNOWN_TYPE = 'UnknownType';
-}
