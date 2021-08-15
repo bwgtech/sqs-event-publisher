@@ -2,7 +2,6 @@ var AWS = require('aws-sdk');
 var sqs = new AWS.SQS({region : 'us-east-1'});
 
 exports.handler = async (event) => {
-//exports.handler = async function(event, context) {
     console.log(event);
     const jsonText = event.body;
     const json = JSON.parse(jsonText);
@@ -63,6 +62,31 @@ exports.handler = async (event) => {
     return response;
     
 };
+
+function getSource(event) {
+  try {
+	  let source = event.body.source;
+	  if (source != null) {
+		  return source;
+	  }
+  } catch (error) { }
+  
+  try {
+	  if (event.headers.indexOf("x-github-event") > -1 ) {
+		  return "github";
+	  }
+  } catch (error) { }
+
+  return "UnknownSource";
+  
+  //const githubEventHeader = event.headers[('x-github-event')];
+  //  if (githubEventHeader) {
+  //      source = "GitHub";
+  //      type = githubEventHeader;
+  //  }
+  //  console.log('message source is [' + source + '], type is [' + type + ']');
+}
+module.exports.getSource = getSource;
 
 const createQueue = async params => {
     return await sqs.createQueue(params).promise();

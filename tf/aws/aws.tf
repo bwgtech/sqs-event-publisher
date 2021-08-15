@@ -1,3 +1,13 @@
+/**
+ *  aws.tf
+ *
+ *    This configuration sets up AWS cloud infrastructure for an Event Publisher application.
+ *  
+ *    It utilizes a nodejs Lambda function with API Gateway trigger to accept HTTP requests 
+ *    containing a json message body and route it to SQS queues based on source and type.
+ *
+ */
+
 terraform {
   required_providers {
     archive = {
@@ -13,24 +23,25 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
-/*
+/**
  *  Configurable Values
  */
 
 locals {
   AppName       = "SQSEventPublisher"
   AwsAccountId  = data.aws_caller_identity.current.account_id
+  AwsProfile    = "dev"
   AwsRegion     = "us-east-1"
   JsCodeDir     = "${path.module}/../../app"
   LambdaPkgName = "lambda_pkg.zip"
 }
 
 provider "aws" {
-  profile = "default"
+  profile = local.AwsProfile
   region  = local.AwsRegion
 }
 
-/*
+/**
  *  Lambda Function
  */
 
@@ -109,6 +120,7 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
 
 data "archive_file" "sqs-event-publisher" {
   type        = "zip"
+  //source_dir  = local.JsCodeDir
   source_file = "${local.JsCodeDir}/index.js"
   output_path = "./${local.LambdaPkgName}"
 }
@@ -122,7 +134,7 @@ resource "aws_lambda_function" "sqs-event-publisher" {
   source_code_hash = data.archive_file.sqs-event-publisher.output_base64sha256
 }
 
-/*
+/**
  *  API Gateway Trigger for Lambda Function
  */
 
@@ -191,7 +203,7 @@ resource "aws_lambda_permission" "sqs-event-publisher" {
   source_arn    = "${aws_apigatewayv2_api.sqs-event-publisher.execution_arn}/*/*"
 }
 
-/*
+/**
  *  Outputs
  */
  

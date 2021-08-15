@@ -110,3 +110,4 @@ dist
 # All Others (especially those added by TortoiseGit!)
 *.lock
 *.zip
+/package-lock.json

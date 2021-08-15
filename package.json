@@ -1,8 +1,12 @@
 {
   "devDependencies": {
+    "aws-sdk-client-mock": "^0.5.3",
     "jest": "^27.0.6"
   },
   "scripts": {
     "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.968.0"
   }
 }
