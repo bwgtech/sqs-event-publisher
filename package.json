@@ -5,12 +5,15 @@
   "description": "Cloud application to accept json requests and route them to message queues based on various criteria.",
   "devDependencies": {
     "aws-sdk-client-mock": "^0.5.3",
-    "jest": "^27.0.6"
+    "jest": "^27.0.6",
+    "webpack": "^5.50.0"
   },
   "scripts": {
+	"build": "webpack",
     "test": "jest"
   },
   "dependencies": {
-    "aws-sdk": "^2.968.0"
+    "@aws-sdk/client-sqs": "^3.26.0",
+    "webpack-cli": "^4.8.0"
   }
 }

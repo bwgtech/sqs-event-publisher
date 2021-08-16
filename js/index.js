@@ -1,15 +1,19 @@
 /**
- *  index.js
+ *  js/index.js
  *
- *  Lambda handler
+ *    Lambda handler
  *
  *    Routes incoming json to SQS based on headers and message elements.
  *
+ *    Dynamically creates SQS queues to match the constructed 4-tuple.
+ *
  */
 
-const AWS = require('aws-sdk');
-const SQS = new AWS.SQS({region : process.env.AWS_REGION});
-
+const { SQSClient, GetQueueUrlCommand, CreateQueueCommand, SendMessageCommand } 
+    = require('@aws-sdk/client-sqs');
+	
+const SQS = new SQSClient({ region: process.env.AWS_REGION });
+		
 exports.handler = async (event) => {
     console.log(event);
 	
@@ -22,19 +26,23 @@ exports.handler = async (event) => {
 	// Check if a queue with the desired name already exists
 	let queueUrl = null;
     try {
-        let existingQ = await getQueueUrl({QueueName: queueName});
+		const getQueueCommand = new GetQueueUrlCommand({QueueName: queueName});
+        let existingQ = await SQS.send(getQueueCommand);
 		queueUrl = existingQ.QueueUrl;
         console.log('Queue named [' + queueName + '] already exists ' +
 		      'with URL [' + queueUrl + ']');
     } catch (error) {
-        console.log('Error from getQueueUrl (expected if queue does ' +
-		      'not exist): ' + error);
+        console.log('Error from getQueueUrl (expected if queue named ' + 
+			  queueName + 'does ' + 'not exist): ' + error);
     }
     
 	// If queue does not already exist, create it
     if (queueUrl == null) {
         try {
-            let newQ = await createQueue({QueueName: queueName});
+        	const createQueueCommand = 
+			      new CreateQueueCommand({QueueName: queueName});
+        	let newQ = await SQS.send(createQueueCommand);
+            //let newQ = await SQS.createQueue({QueueName: queueName});
 			queueUrl = newQ.QueueUrl;
             console.log('Created queue with URL: ' + queueUrl);
         } catch (error) {
@@ -51,7 +59,9 @@ exports.handler = async (event) => {
 			      MessageBody: body,
 			      QueueUrl: queueUrl
 			};
-			let msg = await sendMessage(sendParams);
+			const sendMessageCommand = new SendMessageCommand(sendParams);
+			let msg = await SQS.send(sendMessageCommand);
+			//let msg = await SQS.sendMessage(sendParams);
 			responseTxt = 'Sent message with ID [' + msg.MessageId + 
 			      '] to queue [' + queueName + ']';
 			responseCode = 200;
@@ -106,12 +116,13 @@ function buildQueueName(event) {
 module.exports.buildQueueName = buildQueueName;
 
 /**
- * Determines the source of the event by first checking if the field named 'source' is present 
- * in the message body (which is expected to be JSON).  If not found, HTTP headers are inspected 
- * for known sources.
+ * Determines the source of the event by first checking if the field named 
+ * 'source' is present in the message body (which is expected to be JSON).  If 
+ * not found, HTTP headers are inspected for known sources.
  *
  *   @param {object} event The Lambda event object
- *   @return {string} The source string (or "UnknownSource" if no source could be determined).
+ *   @return {string} The source string (or "UnknownSource" if no source 
+ *     could be determined).
  */
 function getSource(event) {
   try {
@@ -126,19 +137,21 @@ function getSource(event) {
 	  if (event.headers.indexOf('x-github-event') > -1 ) {
 		  return 'github';
 	  }
+	  // Additional header inspection can go here
   } catch (error) { }
-
+  
   return QueueNameVars.UNKNOWN_SOURCE;
 }
 module.exports.getSource = getSource;
 
 /**
- * Determines the source of the event by first checking if the field named 'source' is present 
- * in the message body (which is expected to be JSON).  If not found, HTTP headers are inspected 
- * for known sources.
+ * Determines the source of the event by first checking if the field named 
+ * 'source' is present in the message body (which is expected to be JSON).  If 
+ * not found, HTTP headers are inspected for known sources.
  *
  *   @param {object} event The Lambda event object
- *   @return {string} The type string (or "UnknownType" if no type could be determined).
+ *   @return {string} The type string (or "UnknownType" if no type could 
+ *     be determined).
  */
 function getType(event) {
 	try {
@@ -154,22 +167,9 @@ function getType(event) {
 		if (type != null) {
 			return type;
 		}
+		// Additional header inspection can go here
 	} catch (error) { }
 	
 	return QueueNameVars.UNKNOWN_TYPE;
 }
 module.exports.getType = getType;
-
-// Below is mocked for testing and can be swapped out for other cloud providers
-
-const createQueue = async params => {
-    return await SQS.createQueue(params).promise();
-};
-
-const getQueueUrl = async params => {
-    return await SQS.getQueueUrl(params).promise();
-};
-
-const sendMessage = async params => {
-	return await SQS.sendMessage(params).promise();
-};
