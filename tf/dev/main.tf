@@ -1,5 +1,5 @@
 /**
- *  main.tf
+ *  tf/dev/main.tf
  *
  *    Main Terraform Config for Environment: dev
  *
@@ -29,10 +29,15 @@
  *
  */
 
+locals {
+  pkg_root = "${path.module}/../.."
+}
+
 module "aws" {
   source   = "../modules/aws"
   app_name = var.app_name
   env      = var.env
+  pkg_root = local.pkg_root
 }
 
 /*

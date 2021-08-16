@@ -17,7 +17,7 @@
  *      9. Export endpoint url to be used for other Infra operations
  *
  *    NOTE: AWS credentials should already be configured at this point, 
- *          see ../main.tf for further instructions.
+ *          see main.tf in each environment for further instructions.
  *
  */
 
@@ -31,15 +31,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "3.53.0"
     }
+	external = {
+	  source = "hashicorp/external"
+	  version = "~> 2.1.0"
+	}
   }
-}
-
-data "aws_caller_identity" "current" {}
-
-locals {
-  AwsAccountId  = data.aws_caller_identity.current.account_id
-  JsCodeDir     = "${path.module}/../../../js"
-  LambdaPkgName = "lambda_pkg.zip"
 }
 
 variable "app_name" {
@@ -48,6 +44,18 @@ variable "app_name" {
 
 variable "env" {
   type = string
+}
+
+variable "pkg_root" {
+  type = string
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  AwsAccountId       = data.aws_caller_identity.current.account_id
+  OutputDir          = "${var.pkg_root}/dist"          
+  LambdaRuntime      = "nodejs14.x"
 }
 
 provider "aws" {
@@ -139,26 +147,33 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
 }
 
 data "archive_file" "sqs-event-publisher" {
-  type = "zip"
-  //source_dir  = local.JsCodeDir
-  source_file = "${local.JsCodeDir}/index.js"
-  output_path = "./${local.LambdaPkgName}"
+  type        = "zip"
+  source_file = "${local.OutputDir}/index.js"
+  output_path = "${local.OutputDir}/handler.zip"
 }
 
+/*
+resource "aws_lambda_layer_version" "lambda_layer" {
+  filename            = local.LambdaLayerPkgName
+  layer_name          = "${var.app_name}-DependenciesLayer"
+  compatible_runtimes = [local.LambdaRuntime]
+}
+*/
+
 resource "aws_lambda_function" "sqs-event-publisher" {
-  function_name    = var.app_name
-  role             = aws_iam_role.lambda_iam_role.arn
-  runtime          = "nodejs14.x"
-  handler          = "index.handler"
-  
-  filename         = local.LambdaPkgName
+  function_name = var.app_name
+  role          = aws_iam_role.lambda_iam_role.arn
+  runtime       = local.LambdaRuntime
+  handler       = "index.handler"
+
+  filename         = data.archive_file.sqs-event-publisher.output_path
   source_code_hash = data.archive_file.sqs-event-publisher.output_base64sha256
-  
+
   environment {
     variables = {
-	  APP_NAME = var.app_name
-	  ENV      = var.env
-	}
+      APP_NAME = var.app_name
+      ENV      = var.env
+    }
   }
 }
 
