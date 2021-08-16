@@ -19,13 +19,25 @@ the expected infrastructure operations are commented directly in the Terraform f
 
 ## Quick Start
 
-  1. Configure AWS CLI credentials (*further info [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html))*
+  1. Clone this Repository
+```sh
+$ git clone https://github.com/bwgtech/sqs-event-publisher.git
+```
+
+  2. Initialize Environment
+```sh
+$ cd sqs-event-publisher
+$ npm install
+```
+  
+  3. Configure AWS CLI credentials (*further info [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html))*
 ```sh
 $ aws configure --profile dev
 ```
 
-  2. Deploy Application (*including Infrastructure & Code*)
+  4. Deploy Application (*including Infrastructure & Code*)
 ```sh
+$ npm run build
 $ cd tf/dev
 $ terraform init
 $ terraform plan
