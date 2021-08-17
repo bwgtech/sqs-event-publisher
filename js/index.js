@@ -9,10 +9,10 @@
  *
  */
 
-const { SQSClient, GetQueueUrlCommand, CreateQueueCommand, SendMessageCommand } 
-    = require('@aws-sdk/client-sqs');
-	
-const SQS = new SQSClient({ region: process.env.AWS_REGION });
+const { GetQueueUrlCommand, CreateQueueCommand, SendMessageCommand } 
+      = require('@aws-sdk/client-sqs');
+
+const { sqsClient } = require('./aws-sqs.js');
 		
 exports.handler = async (event) => {
     console.log(event);
@@ -26,23 +26,19 @@ exports.handler = async (event) => {
 	// Check if a queue with the desired name already exists
 	let queueUrl = null;
     try {
-		const getQueueCommand = new GetQueueUrlCommand({QueueName: queueName});
-        let existingQ = await SQS.send(getQueueCommand);
+		const existingQ = await CallGetQueueUrl(queueName);
 		queueUrl = existingQ.QueueUrl;
         console.log('Queue named [' + queueName + '] already exists ' +
 		      'with URL [' + queueUrl + ']');
     } catch (error) {
         console.log('Error from getQueueUrl (expected if queue named ' + 
-			  queueName + 'does ' + 'not exist): ' + error);
+			  queueName + ' does not exist): ' + error);
     }
     
 	// If queue does not already exist, create it
     if (queueUrl == null) {
         try {
-        	const createQueueCommand = 
-			      new CreateQueueCommand({QueueName: queueName});
-        	let newQ = await SQS.send(createQueueCommand);
-            //let newQ = await SQS.createQueue({QueueName: queueName});
+			const newQ = await CallCreateQueue(queueName);
 			queueUrl = newQ.QueueUrl;
             console.log('Created queue with URL: ' + queueUrl);
         } catch (error) {
@@ -59,9 +55,7 @@ exports.handler = async (event) => {
 			      MessageBody: body,
 			      QueueUrl: queueUrl
 			};
-			const sendMessageCommand = new SendMessageCommand(sendParams);
-			let msg = await SQS.send(sendMessageCommand);
-			//let msg = await SQS.sendMessage(sendParams);
+			let msg = await CallSendMessage(sendParams);
 			responseTxt = 'Sent message with ID [' + msg.MessageId + 
 			      '] to queue [' + queueName + ']';
 			responseCode = 200;
@@ -173,3 +167,15 @@ function getType(event) {
 	return QueueNameVars.UNKNOWN_TYPE;
 }
 module.exports.getType = getType;
+
+const CallGetQueueUrl = async (queueName) => {
+	return await sqsClient.send(new GetQueueUrlCommand({QueueName: queueName}));
+};
+
+const CallCreateQueue = async (queueName) => {
+	return await sqsClient.send(new CreateQueueCommand({QueueName: queueName}));
+};
+
+const CallSendMessage = async (sendParams) => {
+	return await sqsClient.send(new SendMessageCommand(sendParams));
+};

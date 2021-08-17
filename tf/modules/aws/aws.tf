@@ -4,17 +4,17 @@
  *    Terraform Main for AWS Module
  *
  *    This configuration performs the following AWS operations:
- *      1. Retrieve Account Id for the caller
- *      2. Configure IAM Role for Lambda
- *      2. Configure CloudWatch Log Access Policy & assign to the Lambda Role
- *      3. Configure SQS Access Policy & assign to the Lambda Role
- *      5. Configure Zip Archive of source (JavaScript)
- *      6. Configure Lambda Function
- *      7. Configure API Gateway
- *      8. Configure API Gateway Logging
- *      9. Configure a Stage for API Gateway
- *      8. Link and Permission API Gateway as Lambda Function Trigger
- *      9. Export endpoint url to be used for other Infra operations
+ *      1)  Retrieve Account Id for the caller
+ *      2)  Configure IAM Role for Lambda
+ *      3)  Configure CloudWatch Log Access Policy & assign to the Lambda Role
+ *      4)  Configure SQS Access Policy & assign to the Lambda Role
+ *      5)  Configure Zip Archive of source (JavaScript)
+ *      6)  Configure Lambda Function
+ *      7)  Configure API Gateway
+ *      8)  Configure API Gateway Logging
+ *      9)  Configure a Stage for API Gateway
+ *      10) Link and Permission API Gateway as Lambda Function Trigger
+ *      11) Export endpoint url to be used for other Infra operations
  *
  *    NOTE: AWS credentials should already be configured at this point, 
  *          see main.tf in each environment for further instructions.
@@ -151,14 +151,6 @@ data "archive_file" "sqs-event-publisher" {
   source_file = "${local.OutputDir}/index.js"
   output_path = "${local.OutputDir}/handler.zip"
 }
-
-/*
-resource "aws_lambda_layer_version" "lambda_layer" {
-  filename            = local.LambdaLayerPkgName
-  layer_name          = "${var.app_name}-DependenciesLayer"
-  compatible_runtimes = [local.LambdaRuntime]
-}
-*/
 
 resource "aws_lambda_function" "sqs-event-publisher" {
   function_name = var.app_name

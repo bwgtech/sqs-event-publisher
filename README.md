@@ -8,7 +8,8 @@ Terraform is used to provision and maintain all necessary cloud infrastructure. 
 initially based on the requirements, but the package structure is intended to facilitate the 
 addition or substitution of cloud providers, as well as usage of other languages.  Details on 
 the expected infrastructure operations are commented directly in the Terraform files: 
-[main.tf](./tf/main.tf), [aws.tf](./tf/aws/aws.tf), and [github.tf](./tf/github/github.tf).
+[main.tf](./tf/dev/main.tf), [aws.tf](./tf/modules/aws/aws.tf), and 
+[github.tf](./tf/modules/github/github.tf).
 
 ## Contents
 
@@ -48,11 +49,13 @@ $ terraform apply
 
 ```
 sqs-event-publisher
-|-- js/                   : JavaScript source code
-    |-- __tests__         : JavaScript unit tests
-|--/tf                    : Main Terraform configuration
-    |-- aws/              : AWS specific Terraform config
-    |-- github/           : GitHub specific Terraform config
+|-- js/                  : JavaScript source code
+   |-- __tests__         : JavaScript unit tests
+|-- tf/
+   |-- dev/              : Terraform Main - Development Env
+   |-- modules/
+      |-- aws/           : AWS specific Terraform config
+      |-- github/        : GitHub specific Terraform config
 ```
 
 ## Unit Tests

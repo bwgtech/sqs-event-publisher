@@ -1,11 +1,19 @@
 /**
- *  index.test.js
+ *  js/__tests__/index.test.js
  *
- *  Lambda handler unit tests
+ *    Unit tests for index.js
  *
  */
 
 const index = require('../index');
+
+const { sqsClient } = require('../aws-sqs.js');
+	  
+jest.mock('../aws-sqs.js');
+
+beforeEach(() => {
+	sqsClient.send.mockReset();
+});
 
 // Tests for buildQueueName(event) from index.js
 
@@ -84,6 +92,34 @@ test('index.getType(): Message Body Contains Type Field', () => {
 	expect(index.getType(e)).toBe('push');
 });
 
+// Tests for handler(event) from index.js
+
+test('index.handler(): Queue Already Exists and Message Sent', async () => {
+	process.env.APP_NAME = 'MyApp';
+	process.env.ENV = 'mock';
+	let queue = new MockQueue('abc');
+	let msg = new MockMessage(123);
+	sqsClient.send.mockReturnValueOnce(queue)
+				  .mockReturnValueOnce(msg);
+	
+	let response = await index.handler(
+	      new Event('{"source":"mars","type":"greeting"}', null));
+	expect(response.statusCode == 200);
+});
+
+test('index.handler(): Queue Needs Creation and Message Sent', async () => {
+	process.env.APP_NAME = 'MyApp';
+	process.env.ENV = 'mock';
+	let e = new Event('{"source":"mars","type":"greeting"}', null);
+	let queue = new MockQueue(index.buildQueueName(e));
+	let msg = new MockMessage(123);
+	sqsClient.send.mockReturnValueOnce(null)
+				  .mockReturnValueOnce(queue)
+				  .mockReturnValueOnce(msg);
+	let response = await index.handler(e);
+	expect(response.statusCode == 200);
+});
+
 // Dummy test structs
 
 class Event {
@@ -93,4 +129,18 @@ class Event {
 	}
 	getBody() { return this.body; }
 	getHeaders() { return this.headers; }
+}
+
+class MockQueue {
+	constructor(url, msgId) {
+		this.QueueUrl = url;
+	}
+	getQueueUrl() { return this.QueueUrl; }
+}
+
+class MockMessage {
+	constructor(msgId) {
+		this.MessageId = msgId;
+	}
+	getMessageId() { return this.MessageId; }
 }
