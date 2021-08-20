@@ -128,9 +128,10 @@ function getSource(event) {
   } catch (error) { }
   
   try {
-	  if (event.headers.indexOf('x-github-event') > -1 ) {
-		  return 'github';
-	  }
+		let type = event.headers[('X-Github-Event')];
+		if (type != null) {
+			return "github";
+		}
 	  // Additional header inspection can go here
   } catch (error) { }
   
@@ -157,7 +158,7 @@ function getType(event) {
 	} catch (error) { }
 	
 	try {
-		let type = event.headers[('x-github-event')];
+		let type = event.headers[('X-Github-Event')];
 		if (type != null) {
 			return type;
 		}
