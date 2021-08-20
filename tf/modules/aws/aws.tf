@@ -244,5 +244,5 @@ resource "aws_lambda_permission" "sqs-event-publisher" {
  */
 
 output "url" {
-  value = aws_apigatewayv2_stage.dev.invoke_url
+  value = "${aws_apigatewayv2_stage.dev.invoke_url}/${aws_lambda_function.sqs-event-publisher.function_name}"
 }

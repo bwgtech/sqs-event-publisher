@@ -21,6 +21,10 @@ terraform {
   }
 }
 
+locals {
+  repoName = "sqs-event-publisher"
+}
+
 variable "app_name" {
   type = string
 }
@@ -34,7 +38,7 @@ variable "endpointUrl" {
 }
 
 resource "github_repository_webhook" "sqs-event-publisher" {
-  repository = var.repoName
+  repository = local.repoName
   active     = true
   events     = ["pull_request", "push"]
 
